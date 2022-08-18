@@ -134,6 +134,9 @@ func (b *Bgp) HandleBgpPeer(neighbor *bgpapi.BgpPeer, delete bool) error {
 
 	b.UpdatePeerMetrics(neighbor, delete)
 	if delete {
+
+		//MergeConfigMap
+		//WriteConfigAs
 		b.bgpServer.DeletePeer(context.Background(), &api.DeletePeerRequest{
 			Address:   request.Conf.NeighborAddress,
 			Interface: request.Conf.NeighborInterface,

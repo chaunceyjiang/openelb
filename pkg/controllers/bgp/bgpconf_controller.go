@@ -85,6 +85,12 @@ func (r *BgpConfReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	// goBGP.toml is new file
+
+	//viper.ReadInConfig(goBGP.toml)
+	//viper.MergeConfigMap(BgpConf)
+	//viper.WriteConfigAs(goBGP.toml)
+
 	node := &corev1.Node{}
 	rack := ""
 	err = r.Get(context.Background(), types.NamespacedName{Name: util.GetNodeName()}, node)

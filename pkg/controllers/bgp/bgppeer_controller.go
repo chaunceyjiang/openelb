@@ -20,6 +20,9 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 	"time"
 
 	"github.com/openelb/openelb/api/v1alpha2"
@@ -105,10 +108,33 @@ func (r BgpPeerReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			log.Error(err, "cannot delete bgp peer, maybe need to delete manually")
 		}
 
+		//cur:=config.ReadConfigFile(goBGP.toml)
+
+		//p := viper.Get("neighbors").([]interface{})
+		//p = deletePeer(p, peer)                               delete the current peer
+		//viper.Set("neighbors", p)
+
+		//viper.ReadInConfig(configMap)
+		//viper.MergeConfigMap(configMap)
+
+		//viper.WriteConfigAs(goBGP.toml)
+		//new:=config.ReadConfigFile(goBGP.toml)
+
+		//config.UpdateConfig(cur,new)
 		controllerutil.RemoveFinalizer(clone, constant.FinalizerName)
 		return ctrl.Result{}, r.Update(context.Background(), clone)
 	}
 
+	//cur:=config.ReadConfigFile(goBGP.toml)
+
+	//viper.ReadInConfig(configMap)
+	//viper.MergeConfigMap(configMap)
+	//viper.MergeConfigMap(peer)
+
+	//viper.WriteConfigAs()
+	//new:=config.ReadConfigFile()
+
+	//config.UpdateConfig(cur,new)
 	if util.NeedToAddFinalizer(clone, constant.FinalizerName) {
 		controllerutil.AddFinalizer(clone, constant.FinalizerName)
 		metrics.InitBGPPeerMetrics(clone.Spec.Conf.NeighborAddress, util.GetNodeName())
@@ -181,6 +207,33 @@ func (r BgpPeerReconciler) run(stopCh <-chan struct{}) {
 func (r BgpPeerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha2.BgpPeer{}).
+		Watches(
+			&source.Kind{Type: &corev1.ConfigMap{}},
+			handler.EnqueueRequestsFromMapFunc(r.findObjectsForConfigMap),
+			builder.WithPredicates(predicate.Funcs{
+				CreateFunc: func(createEvent event.CreateEvent) bool {
+					cm := createEvent.Object.(*corev1.ConfigMap)
+					if cm.Name == "fixedName" && cm.ClusterName == "openelb-system" {
+						return true
+					}
+					return false
+				},
+				DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
+					cm := deleteEvent.Object.(*corev1.ConfigMap)
+					if cm.Name == "fixedName" && cm.ClusterName == "openelb-system" {
+						return true
+					}
+					return false
+				},
+				UpdateFunc: func(deleteEvent event.UpdateEvent) bool {
+					cm := deleteEvent.ObjectNew.(*corev1.ConfigMap)
+					if cm.Name == "fixedName" && cm.ClusterName == "openelb-system" {
+						return true
+					}
+					return false
+				},
+				GenericFunc: nil,
+			})).
 		WithEventFilter(predicate.Funcs{
 			CreateFunc: func(e event.CreateEvent) bool {
 				if util.DutyOfCNI(nil, e.Meta) {

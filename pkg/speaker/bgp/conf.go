@@ -19,6 +19,8 @@ func (b *Bgp) HandleBgpGlobalConfig(global *bgpapi.BgpConf, rack string, delete 
 	}
 
 	b.bgpServer.StopBgp(context.Background(), nil)
+	//cur:=config.ReadConfigFile(goBGP.toml)
+	//config.InitialConfig(cur)
 	return b.bgpServer.StartBgp(context.Background(), &api.StartBgpRequest{
 		Global: request,
 	})
